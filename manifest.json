@@ -1,0 +1,12 @@
+{
+  "name": "仕入管理",
+  "short_name": "仕入管理",
+  "description": "仕入商品の管理アプリ",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F2F7",
+  "theme_color": "#007AFF",
+  "lang": "ja"
+}
