@@ -829,23 +829,16 @@
           <input class="finp" id="f-sd" type="date">
         </div>
         <div class="frow">
-          <label class="flabel" for="f-cd" style="font-size:13px;line-height:1.3;">取引完了日<br><span style="font-size:11px;color:var(--t3);">（評価日）</span></label>
-          <input class="finp" id="f-cd" type="date">
-        </div>
-        <div class="frow">
-          <label class="flabel" for="f-nt">触らない</label>
-          <label class="tog">
-            <input type="checkbox" id="f-nt">
-            <span class="tog-sl"></span>
-          </label>
-        </div>
-        <div class="frow">
           <label class="flabel" for="f-sale">販売価格</label>
           <input class="finp" id="f-sale" type="number" placeholder="¥0" min="0" inputmode="decimal">
         </div>
         <div class="frow">
           <label class="flabel" for="f-cost">仕入額</label>
           <input class="finp" id="f-cost" type="number" placeholder="¥0" min="0" inputmode="decimal">
+        </div>
+        <div class="frow">
+          <label class="flabel" for="f-fee">作業手数料</label>
+          <input class="finp" id="f-fee" type="number" placeholder="¥0" min="0" inputmode="decimal">
         </div>
       </div>
 
@@ -890,8 +883,7 @@ const App = (() => {
 
   /* ── filters ── */
   const FILTER_DEFS = [
-    { k:'all',   l:'全て' },
-    { k:'touch', l:'触らない' },
+    { k:'all', l:'全て' },
   ];
 
   function renderFilters() {
@@ -905,7 +897,6 @@ const App = (() => {
   /* ── list ── */
   function getFiltered() {
     let arr = [...items];
-    if (filter === 'touch') arr = arr.filter(i => i.noTouch);
     if (query) {
       const q = query.toLowerCase();
       arr = arr.filter(i =>
@@ -944,9 +935,7 @@ const App = (() => {
         <div class="card" onclick="App.openEdit('${item.id}')">
           <div class="card-row1">
             <span class="card-name">${esc(item.name)}</span>
-            <div>
-              ${item.noTouch ? '<span class="no-touch-tag">触らない</span>' : ''}
-            </div>
+            <div></div>
           </div>
           ${meta.length ? `<div class="card-meta">${meta.map(t=>`<span class="meta-tag">${t}</span>`).join('<span class="meta-tag">·</span>')}</div>` : ''}
           <div class="card-prices">
@@ -1032,10 +1021,9 @@ const App = (() => {
     document.getElementById('f-qty').value   = item.quantity || '';
     document.getElementById('f-cost').value  = item.costPrice || '';
     document.getElementById('f-sale').value  = item.salePrice || '';
-    document.getElementById('f-nt').checked  = item.noTouch || false;
+    document.getElementById('f-fee').value   = item.fee || '';
     document.getElementById('f-pd').value    = item.purchaseDate || '';
     document.getElementById('f-sd').value    = item.shippingDate || '';
-    document.getElementById('f-cd').value    = item.completionDate || '';
     showSheet();
   }
 
@@ -1056,10 +1044,9 @@ const App = (() => {
       quantity:       Number(document.getElementById('f-qty').value) || 1,
       costPrice:      Number(document.getElementById('f-cost').value) || 0,
       salePrice:      Number(document.getElementById('f-sale').value) || 0,
-      noTouch:        document.getElementById('f-nt').checked,
+      fee:            Number(document.getElementById('f-fee').value) || 0,
       purchaseDate:   document.getElementById('f-pd').value,
       shippingDate:   document.getElementById('f-sd').value,
-      completionDate: document.getElementById('f-cd').value,
       createdAt:      prev ? prev.createdAt : Date.now(),
       updatedAt:      Date.now(),
       synced:         prev ? (prev.synced || false) : false,
@@ -1103,8 +1090,8 @@ const App = (() => {
 
   /* ── settings & sync ── */
   const GAS_SCRIPT = `var HEADERS = ['商品名','品番','購入先','サイズ','点数',
-  '仕入日','発送日','取引完了日',
-  '販売価格','仕入額'];
+  '仕入日','発送日',
+  '販売価格','仕入額','作業手数料'];
 
 function doPost(e) {
   try {
@@ -1139,10 +1126,11 @@ function toRow(item) {
   var q = Number(item.quantity)  || 1;
   var c = Number(item.costPrice) || 0;
   var s = Number(item.salePrice) || 0;
+  var f = Number(item.fee) || 0;
   return [
     item.name, item.code, item.source, item.size, q,
-    item.purchaseDate||'', item.shippingDate||'', item.completionDate||'',
-    s, c
+    item.purchaseDate||'', item.shippingDate||'',
+    s, c, f
   ];
 }
 
