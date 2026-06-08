@@ -282,11 +282,7 @@
       width: 4px;
     }
 
-    .card[data-s="未出品"]::before  { background: var(--gray); }
-    .card[data-s="出品中"]::before  { background: var(--blue); }
-    .card[data-s="取引中"]::before  { background: var(--orange); }
-    .card[data-s="発送済み"]::before { background: var(--purple); }
-    .card[data-s="完了"]::before    { background: var(--green); }
+    .card::before { background: var(--blue); }
 
     .card-row1 {
       display: flex;
@@ -302,27 +298,6 @@
       flex: 1;
       word-break: break-all;
     }
-
-    .card-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-
-    .badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 20px;
-    }
-
-    .b-未出品  { background: var(--gray6); color: var(--gray); }
-    .b-出品中  { background: #E8F0FF; color: var(--blue); }
-    .b-取引中  { background: #FFF4E5; color: var(--orange); }
-    .b-発送済み { background: #F5EEFF; color: var(--purple); }
-    .b-完了    { background: #EDFBF1; color: var(--green); }
 
     .no-touch-tag {
       font-size: 10px;
@@ -621,36 +596,6 @@
 
     .finp::placeholder { color: var(--t3); }
 
-    /* status picker */
-    .spicker {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 12px;
-    }
-
-    .sopt {
-      flex: 1;
-      min-width: 70px;
-      padding: 8px 4px;
-      border-radius: 9px;
-      border: 1.5px solid var(--gray4);
-      text-align: center;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      color: var(--t2);
-      background: transparent;
-      font-family: inherit;
-      transition: all .15s;
-    }
-
-    .sopt.on-未出品  { border-color: var(--gray);   background: var(--gray6);  color: var(--gray); }
-    .sopt.on-出品中  { border-color: var(--blue);   background: #E8F0FF;        color: var(--blue); }
-    .sopt.on-取引中  { border-color: var(--orange); background: #FFF4E5;        color: var(--orange); }
-    .sopt.on-発送済み { border-color: var(--purple); background: #F5EEFF;        color: var(--purple); }
-    .sopt.on-完了    { border-color: var(--green);  background: #EDFBF1;        color: var(--green); }
-
     /* toggle */
     .tog {
       position: relative;
@@ -874,11 +819,6 @@
         </div>
       </div>
 
-      <div class="fsec-ttl" style="padding:0 4px;margin:16px 0 8px;">販売状況</div>
-      <div class="fgroup">
-        <div class="spicker" id="spicker"></div>
-      </div>
-
       <div class="fgroup" style="margin-top:10px;">
         <div class="frow">
           <label class="flabel" for="f-pd">仕入日</label>
@@ -919,15 +859,11 @@
 </div>
 
 <script>
-const STATUSES = ['未出品','出品中','取引中','発送済み','完了'];
-const S_COLOR  = { '未出品':'var(--gray)','出品中':'var(--blue)','取引中':'var(--orange)','発送済み':'var(--purple)','完了':'var(--green)' };
-
 const App = (() => {
   let items  = [];
   let filter = 'all';
   let query  = '';
   let view   = 'list';
-  let curStatus = '未出品';
 
   /* ── storage ── */
   const load = () => { try { items = JSON.parse(localStorage.getItem('items') || '[]'); } catch { items = []; } };
@@ -954,9 +890,8 @@ const App = (() => {
 
   /* ── filters ── */
   const FILTER_DEFS = [
-    { k:'all',     l:'全て' },
-    { k:'touch',   l:'触らない' },
-    ...STATUSES.map(s => ({ k:s, l:s })),
+    { k:'all',   l:'全て' },
+    { k:'touch', l:'触らない' },
   ];
 
   function renderFilters() {
@@ -970,8 +905,7 @@ const App = (() => {
   /* ── list ── */
   function getFiltered() {
     let arr = [...items];
-    if      (filter === 'touch') arr = arr.filter(i => i.noTouch);
-    else if (filter !== 'all')   arr = arr.filter(i => i.status === filter);
+    if (filter === 'touch') arr = arr.filter(i => i.noTouch);
     if (query) {
       const q = query.toLowerCase();
       arr = arr.filter(i =>
@@ -1007,11 +941,10 @@ const App = (() => {
       ].filter(Boolean);
 
       return `
-        <div class="card" data-s="${esc(item.status)}" onclick="App.openEdit('${item.id}')">
+        <div class="card" onclick="App.openEdit('${item.id}')">
           <div class="card-row1">
             <span class="card-name">${esc(item.name)}</span>
-            <div class="card-right">
-              <span class="badge b-${esc(item.status)}">${esc(item.status)}</span>
+            <div>
               ${item.noTouch ? '<span class="no-touch-tag">触らない</span>' : ''}
             </div>
           </div>
@@ -1028,21 +961,11 @@ const App = (() => {
 
   /* ── stats ── */
   function renderStats() {
-    const el       = document.getElementById('content');
-    const total    = items.length;
-    const totCost  = items.reduce((s,i) => s + (Number(i.costPrice)||0)*(Number(i.quantity)||1), 0);
-    const done     = items.filter(i => i.status === '完了');
-    const totRev   = done.reduce((s,i) => s + (Number(i.salePrice)||0)*(Number(i.quantity)||1), 0);
-    const totProf  = done.reduce((s,i) => s + (getProfit(i)||0), 0);
-
-    const statusRows = STATUSES.map(s => {
-      const cnt = items.filter(i => i.status === s).length;
-      return `<div class="list-row"><div class="dot" style="background:${S_COLOR[s]}"></div><span class="row-name">${s}</span><span class="row-val">${cnt}点</span></div>`;
-    }).join('');
-
-    const topDone = [...done]
-      .sort((a,b)=>(getProfit(b)||0)-(getProfit(a)||0))
-      .slice(0,5);
+    const el      = document.getElementById('content');
+    const total   = items.length;
+    const totCost = items.reduce((s,i) => s + (Number(i.costPrice)||0)*(Number(i.quantity)||1), 0);
+    const totRev  = items.reduce((s,i) => s + (Number(i.salePrice)||0)*(Number(i.quantity)||1), 0);
+    const totProf = items.reduce((s,i) => s + (getProfit(i)||0), 0);
 
     el.innerHTML = `
       <div class="stat-grid">
@@ -1055,36 +978,14 @@ const App = (() => {
           <div class="sval">${yen(totCost)}</div>
         </div>
         <div class="stat-card">
-          <div class="slabel">総売上（完了）</div>
+          <div class="slabel">総売上</div>
           <div class="sval">${yen(totRev)}</div>
         </div>
         <div class="stat-card">
-          <div class="slabel">総利益（完了）</div>
+          <div class="slabel">総利益</div>
           <div class="sval ${totProf>=0?'g':'r'}">${yen(totProf)}</div>
         </div>
       </div>
-
-      <div class="sec-ttl">販売状況別</div>
-      <div class="list-group">
-        ${statusRows}
-        <div class="list-row">
-          <div class="dot" style="background:var(--red)"></div>
-          <span class="row-name">触らない</span>
-          <span class="row-val">${items.filter(i=>i.noTouch).length}点</span>
-        </div>
-      </div>
-
-      ${topDone.length ? `
-        <div class="sec-ttl">完了済み（利益順）</div>
-        <div class="list-group">
-          ${topDone.map(item => {
-            const p = getProfit(item)||0;
-            return `<div class="list-row" onclick="App.openEdit('${item.id}')">
-              <span class="row-name">${esc(item.name)}</span>
-              <span class="row-val" style="color:${p>=0?'var(--green)':'var(--red)'}">${yen(p)}</span>
-            </div>`;
-          }).join('')}
-        </div>` : ''}
     `;
   }
 
@@ -1109,29 +1010,18 @@ const App = (() => {
   function search(v) { query = v; renderList(); }
 
   /* ── form ── */
-  function renderSpicker(sel) {
-    document.getElementById('spicker').innerHTML = STATUSES.map(s =>
-      `<button type="button" class="sopt ${sel===s?'on-'+s:''}" onclick="App._setStatus('${s}')">${s}</button>`
-    ).join('');
-  }
-
-  function _setStatus(s) { curStatus = s; renderSpicker(s); }
-
   function openAdd() {
-    curStatus = '未出品';
     document.getElementById('sheetTitle').textContent = '新規追加';
     document.getElementById('delBtn').style.display = 'none';
     document.getElementById('form').reset();
     document.getElementById('f-id').value = '';
     document.getElementById('f-nt').checked = false;
-    renderSpicker('未出品');
     showSheet();
   }
 
   function openEdit(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
-    curStatus = item.status || '未出品';
     document.getElementById('sheetTitle').textContent = '編集';
     document.getElementById('delBtn').style.display = 'block';
     document.getElementById('f-id').value    = item.id;
@@ -1146,7 +1036,6 @@ const App = (() => {
     document.getElementById('f-pd').value    = item.purchaseDate || '';
     document.getElementById('f-sd').value    = item.shippingDate || '';
     document.getElementById('f-cd').value    = item.completionDate || '';
-    renderSpicker(curStatus);
     showSheet();
   }
 
@@ -1167,7 +1056,6 @@ const App = (() => {
       quantity:       Number(document.getElementById('f-qty').value) || 1,
       costPrice:      Number(document.getElementById('f-cost').value) || 0,
       salePrice:      Number(document.getElementById('f-sale').value) || 0,
-      status:         curStatus,
       noTouch:        document.getElementById('f-nt').checked,
       purchaseDate:   document.getElementById('f-pd').value,
       shippingDate:   document.getElementById('f-sd').value,
@@ -1214,7 +1102,7 @@ const App = (() => {
   }
 
   /* ── settings & sync ── */
-  const GAS_SCRIPT = `var HEADERS = ['商品名','品番','購入先','サイズ','点数','販売状況',
+  const GAS_SCRIPT = `var HEADERS = ['商品名','品番','購入先','サイズ','点数',
   '仕入日','発送日','取引完了日',
   '販売価格','仕入額'];
 
@@ -1252,7 +1140,7 @@ function toRow(item) {
   var c = Number(item.costPrice) || 0;
   var s = Number(item.salePrice) || 0;
   return [
-    item.name, item.code, item.source, item.size, q, item.status||'',
+    item.name, item.code, item.source, item.size, q,
     item.purchaseDate||'', item.shippingDate||'', item.completionDate||'',
     s, c
   ];
@@ -1442,7 +1330,7 @@ function res(obj) {
     }
   }
 
-  return { setFilter, setView, search, openAdd, openEdit, save: saveItem, del, closeSheet, _setStatus, openSettings, closeSettings, saveSettings, syncToSheets, deleteSynced, resetSyncFlags, copyScript, init };
+  return { setFilter, setView, search, openAdd, openEdit, save: saveItem, del, closeSheet, openSettings, closeSettings, saveSettings, syncToSheets, deleteSynced, resetSyncFlags, copyScript, init };
 })();
 
 function toggleSearch() {
