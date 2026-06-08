@@ -1215,7 +1215,7 @@ const App = (() => {
 
   /* ── settings & sync ── */
   const GAS_SCRIPT = `var HEADERS = ['商品名','品番','購入先','サイズ','点数',
-  '','仕入日','発送日','取引完了日',
+  '仕入日','発送日','取引完了日',
   '販売価格','仕入額'];
 
 function doPost(e) {
@@ -1253,7 +1253,6 @@ function toRow(item) {
   var s = Number(item.salePrice) || 0;
   return [
     item.name, item.code, item.source, item.size, q,
-    '',
     item.purchaseDate||'', item.shippingDate||'', item.completionDate||'',
     s, c
   ];
